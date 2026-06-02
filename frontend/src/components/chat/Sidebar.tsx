@@ -1,9 +1,10 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { useChat } from '../../store/chatContext';
 import { Button } from '../common/Button';
-import { MessageSquarePlus, MessageSquare, Trash2, BarChart3, PanelLeftClose, Zap } from 'lucide-react';
+import { MessageSquarePlus, MessageSquare, Trash2, BarChart3, PanelLeftClose, Zap, FlaskConical } from 'lucide-react';
 import { formatDate } from '../../utils/format';
 
 export const Sidebar: React.FC = () => {
@@ -101,6 +102,13 @@ export const Sidebar: React.FC = () => {
 
       {/* Sidebar Footer */}
       <div className="p-4 border-t border-slate-800/60 bg-[#070a11]/40 flex flex-col gap-2">
+        <Link
+          href="/logs"
+          className="flex items-center gap-2 px-3 py-2.5 text-xs text-slate-400 hover:text-slate-200 hover:bg-white/5 rounded-xl border border-slate-800/30 transition-all duration-300 select-none"
+        >
+          <FlaskConical className="w-4 h-4 text-cyan-400" />
+          <span>Log Viewer</span>
+        </Link>
         <a
           href="http://127.0.0.1:8000/api/health"
           target="_blank"

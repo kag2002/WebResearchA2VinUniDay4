@@ -96,6 +96,71 @@ async def health():
         "model": MODEL_NAME or "default"
     }
 
+# ── Log Viewer API ───────────────────────────────────────────
+RUNS_DIR = ROOT / "runs"
+TRANSCRIPTS_DIR = ROOT / "transcripts"
+SAMPLES_RUNS_DIR = ROOT / "samples" / "runs"
+SAMPLES_TRANSCRIPTS_DIR = ROOT / "samples" / "transcripts"
+
+@app.get("/api/logs/runs")
+async def list_runs():
+    """Return summary metadata for every eval-run JSON."""
+    items = []
+    for d in [RUNS_DIR, SAMPLES_RUNS_DIR]:
+        if not d.exists():
+            continue
+        for f in sorted(d.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
+            try:
+                data = json.loads(f.read_text(encoding="utf-8"))
+                items.append({
+                    "file": str(f.relative_to(ROOT)),
+                    "run_id": data.get("run_id", f.stem),
+                    "version": data.get("version"),
+                    "artifact_version": data.get("artifact_version"),
+                    "suite": data.get("suite"),
+                    "provider": data.get("provider"),
+                    "model": data.get("model"),
+                    "generated_at": data.get("generated_at"),
+                    "summary": data.get("summary", {}),
+                })
+            except Exception:
+                continue
+    return {"runs": items}
+
+@app.get("/api/logs/transcripts")
+async def list_transcripts():
+    """Return summary metadata for every transcript JSON."""
+    items = []
+    for d in [TRANSCRIPTS_DIR, SAMPLES_TRANSCRIPTS_DIR]:
+        if not d.exists():
+            continue
+        for f in sorted(d.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
+            try:
+                data = json.loads(f.read_text(encoding="utf-8"))
+                items.append({
+                    "file": str(f.relative_to(ROOT)),
+                    "transcript_id": data.get("transcript_id", f.stem),
+                    "version": data.get("version"),
+                    "provider": data.get("provider"),
+                    "model": data.get("model"),
+                    "created_at": data.get("created_at"),
+                    "turn_count": len(data.get("turns", [])),
+                })
+            except Exception:
+                continue
+    return {"transcripts": items}
+
+@app.get("/api/logs/detail")
+async def log_detail(file: str):
+    """Return full content of a specific log JSON file (restricted to runs/ transcripts/ samples/)."""
+    target = (ROOT / file).resolve()
+    # Security: only allow reading inside the project
+    if not str(target).startswith(str(ROOT.resolve())):
+        raise HTTPException(status_code=403, detail="Access denied")
+    if not target.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    return json.loads(target.read_text(encoding="utf-8"))
+
 @app.post("/api/chat", response_model=ChatResponse)
 async def chat_endpoint(request: ChatRequest):
     start_time = time.time()
